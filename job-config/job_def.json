@@ -4,7 +4,6 @@
       {
         "task_key": "etl_task",
         "new_cluster": {
-          "spark_version": "12.2.x-scala2.12",
           "data_security_mode": "SINGLE_USER",
           "runtime_engine": "PHOTON",
           "num_workers": 1
