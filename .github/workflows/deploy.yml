@@ -21,7 +21,7 @@ jobs:
       run: |
         # We'll attempt to create a job from the JSON definition.
         # If a job with the same name exists, consider "databricks jobs reset" or "databricks jobs update".
-        
+        databricks jobs list --output JSON | jq .
         # 1) Check if job already exists by name
         JOB_NAME=$(jq -r '.name' job-config/job_def.json)
         JOB_ID=$(databricks jobs list --output JSON | jq -r ".jobs[] | select(.settings.name == \"${JOB_NAME}\") | .job_id" || true)
