@@ -4,7 +4,7 @@
       {
         "task_key": "etl_task",
         "notebook_task": {
-          "python_file": "/Workspace/Repos/matthew.j.s.gibson@gmail.com/test-dbx/src/etl"
+          "notebook_path": "/Workspace/Repos/matthew.j.s.gibson@gmail.com/test-dbx/src/etl"
         }
       }
     ]
