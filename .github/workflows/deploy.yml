@@ -23,13 +23,13 @@ jobs:
         # If a job with the same name exists, consider "databricks jobs reset" or "databricks jobs update".
         
         # 1) Check if job already exists by name
-        JOB_NAME=$(jq -r '.name' job-config/job_definition.json)
+        JOB_NAME=$(jq -r '.name' job-config/job_def.json)
         JOB_ID=$(databricks jobs list --output JSON | jq -r ".jobs[] | select(.settings.name == \"${JOB_NAME}\") | .job_id" || true)
         
         if [ -z "$JOB_ID" ] || [ "$JOB_ID" == "null" ]; then
           echo "Job does not exist. Creating new job..."
-          databricks jobs create --json-file job-config/job_definition.json
+          databricks jobs create --json-file job-config/job_def.json
         else
           echo "Job exists with ID: $JOB_ID. Updating job..."
-          databricks jobs reset --job-id "$JOB_ID" --json-file job-config/job_definition.json
+          databricks jobs reset --job-id "$JOB_ID" --json-file job-config/job_def.json
         fi
