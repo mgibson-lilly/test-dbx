@@ -1,0 +1,91 @@
+name: Deploy to Databricks
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy-job:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Install Databricks CLI
+      run: |
+        pip install databricks-cli
+
+    - name: Configure Databricks CLI
+      run: |
+        databricks configure --token <<EOF
+        ${{ secrets.DATABRICKS_HOST }}
+        ${{ secrets.DATABRICKS_TOKEN }}
+        EOF
+
+    - name: Upload PySpark file to DBFS
+      run: |
+        # Create a directory in DBFS if desired
+        # This example uploads directly into /my-code/src 
+        databricks fs mkdirs dbfs:/my-code/src
+        
+        # Upload the local etl_job.py to DBFS
+        databricks fs cp src/etl_job.py dbfs:/my-code/src/etl_job.py --overwrite
+
+    - name: Create or Update Databricks Job
+      run: |
+        # We'll attempt to create a job from the JSON definition.
+        # If a job with the same name exists, consider "databricks jobs reset" or "databricks jobs update".
+        
+        # 1) Check if job already exists by name
+        JOB_NAME=$(jq -r '.name' job-config/job_definition.json)
+        JOB_ID=$(databricks jobs list --output JSON | jq -r ".jobs[] | select(.settings.name == \"${JOB_NAME}\") | .job_id" || true)
+        
+        if [ -z "$JOB_ID" ] || [ "$JOB_ID" == "null" ]; then
+          echo "Job does not exist. Creating new job..."
+          databricks jobs create --json-file job-config/job_definition.json
+        else
+          echo "Job exists with ID: $JOB_ID. Updating job..."
+          databricks jobs reset --job-id "$JOB_ID" --json-file job-config/job_definition.json
+        fi
+
+    - name: Run the Job for verification
+      run: |
+        JOB_NAME=$(jq -r '.name' job-config/job_definition.json)
+        JOB_ID=$(databricks jobs list --output JSON | jq -r ".jobs[] | select(.settings.name == \"${JOB_NAME}\") | .job_id")
+
+        if [ -z "$JOB_ID" ] || [ "$JOB_ID" == "null" ]; then
+          echo "Could not find job ID. Exiting."
+          exit 1
+        else
+          echo "Found Job ID: $JOB_ID. Triggering run..."
+          RUN_ID=$(databricks jobs run-now --job-id "$JOB_ID" --json '{}' --output JSON | jq -r '.run_id')
+          echo "Triggered job run with RUN_ID: $RUN_ID"
+
+          # Optionally wait for the run to complete
+          # This will poll the run status for up to 10 minutes (600 seconds)
+          TIMEOUT=600
+          while [ $TIMEOUT -gt 0 ]
+          do
+            STATUS=$(databricks runs get --run-id $RUN_ID --output JSON | jq -r '.state.life_cycle_state')
+            RESULT_STATE=$(databricks runs get --run-id $RUN_ID --output JSON | jq -r '.state.result_state')
+            echo "Current Status: $STATUS, Result: $RESULT_STATE"
+
+            if [ "$STATUS" == "TERMINATED" ] || [ "$STATUS" == "SKIPPED" ] || [ "$STATUS" == "INTERNAL_ERROR" ]; then
+              if [ "$RESULT_STATE" == "SUCCESS" ]; then
+                echo "Databricks Job run finished successfully."
+                break
+              else
+                echo "Databricks Job run failed or was cancelled."
+                exit 1
+              fi
+            fi
+
+            TIMEOUT=$((TIMEOUT-30))
+            sleep 30
+          done
+
+          if [ $TIMEOUT -le 0 ]; then
+            echo "Timed out waiting for the Databricks job to finish."
+            exit 1
+          fi
+        fi
