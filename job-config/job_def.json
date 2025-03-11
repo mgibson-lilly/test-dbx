@@ -11,7 +11,7 @@
           "num_workers": 1
         },
         "spark_python_task": {
-          "python_file": "dbfs:/my-code/src/etl_job.py"
+          "python_file": "/Workspace/Repos/matthew.j.s.gibson@gmail.com/test-dbx/src/etl_job.py"
         }
       }
     ]
