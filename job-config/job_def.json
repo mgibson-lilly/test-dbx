@@ -3,13 +3,8 @@
     "tasks": [
       {
         "task_key": "etl_task",
-        "new_cluster": {
-          "data_security_mode": "SINGLE_USER",
-          "runtime_engine": "PHOTON",
-          "num_workers": 1
-        },
-        "spark_python_task": {
-          "python_file": "/Workspace/Repos/you/your-repo/src/etl_job.py"
+        "notebook_task": {
+          "python_file": "/Workspace/Repos/matthew.j.s.gibson@gmail.com/test-dbx/src/etl"
         }
       }
     ]
