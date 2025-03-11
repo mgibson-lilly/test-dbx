@@ -27,8 +27,8 @@ jobs:
       
         if [ -z "$JOB_ID" ] || [ "$JOB_ID" == "null" ]; then
           echo "Job does not exist. Creating new job..."
-          databricks jobs create --json job-config/job_def.json
+          databricks jobs create --json @job-config/job_def.json
         else
           echo "Job exists with ID: $JOB_ID. Updating job..."
-          databricks jobs reset --job-id "$JOB_ID" --json job-config/job_def.json
+          databricks jobs reset --job-id "$JOB_ID" --json @job-config/job_def.json
         fi
